@@ -18,6 +18,8 @@ class GalaxyMap {
 
 	protected array $galaxies;
 
+	protected int $prime;
+
 	public function get_count() {
 		return count( $this->galaxies );
 	}
@@ -44,10 +46,15 @@ class GalaxyMap {
 		}
 		print_r( $this->empty_columns );
 
+		$this->prime = (int) gmp_strval( gmp_nextprime( strlen( $this->rows[0] ) ) );
+
 		$new_rows = [];
 		foreach ( $this->rows as $index => $row ) {
-			$new_rows[] = $row;
 			if ( isset ( $this->empty_rows[ $index ] ) ) {
+				for( $i = 0; $i < $this->prime; $i++ ) {
+					$new_rows[] = $row;
+				}
+			} else {
 				$new_rows[] = $row;
 			}
 		}
@@ -57,9 +64,10 @@ class GalaxyMap {
 			$row_chars = str_split( $row );
 			$new_chars = [];
 			foreach ( $row_chars as $key => $char ) {
-				$new_chars[] = $char;
 				if ( isset ( $this->empty_columns[ $key ] ) ) {
-					$new_chars[] = '.';
+					$new_chars[] = implode( '', array_fill( 0, $this->prime, '.' ) );
+				} else {
+					$new_chars[] = $char;
 				}
 			}
 			$this->rows[ $index ] = implode( '', $new_chars );
@@ -76,7 +84,8 @@ class GalaxyMap {
 				$this->galaxies[ $galaxy++ ] = [ $position, $index ];
 			}
 		}
-		print_r( $this->galaxies );
+		//print( count( $this->rows ) . PHP_EOL );
+		//print( strlen( $this->rows[0] ) . PHP_EOL );
 	}
 
 	public function get_distance( $one, $two ) {
@@ -87,45 +96,16 @@ class GalaxyMap {
 		$hor_diff = abs( $abstwo - $absone );
 		$ver_diff = abs( $ordtwo - $ordone );
 
-		if ( 0 === $hor_diff ) return $ver_diff;
-		if ( 0 === $ver_diff ) return $hor_diff;
+		$hor_rem = $hor_diff % $this->prime;
+		$ver_rem = $ver_diff % $this->prime;
 
-		$ratio = $hor_diff / $ver_diff;
+		$hor_num_primes = ( $hor_diff - $hor_rem ) / $this->prime;
+		$ver_num_primes = ( $ver_diff - $ver_rem ) / $this->prime;
 
-		$startabs = min( $absone, $abstwo );
-		$startord = min( $ordone, $ordtwo );
-		$endabs   = max( $absone, $abstwo );
-		$endord   = max( $ordone, $ordtwo );
+		$hor_diff = ( $hor_num_primes * 1000000 ) + $hor_rem;
+		$ver_diff = ( $ver_num_primes * 1000000 ) + $ver_rem;
 
-		//print( $ratio );
-		$up = 0;
-		$right = 0;
-		for ( $j = 1; $j < $ver_diff + 1; $j++ ) {
-			// if ( $right > 1 ) print( implode( '', array_fill( 0, $right - 1 , '-' ) ) );
-			for ( $i = $right; $i < $hor_diff + 1; $i++ ) {
-
-				if ( $i / $j >= $ratio ) {
-					$up++;
-					//print PHP_EOL;
-					continue 2;
-				} elseif ( $j - 1 === $up ) {
-					//print '*';
-					$right++;
-				} else {
-					//print '.';
-				}
-
-			}
-			print PHP_EOL;
-		}
-
-		//  print PHP_EOL;
-		//print( 'Horizontal ' . $hor_diff . PHP_EOL );
-		//print( 'Vertical ' . $ver_diff . PHP_EOL );
-		//print( 'Hor dist ' . $right . PHP_EOL );
-		//print( 'Ver dist ' . $up . PHP_EOL );
-
-		return $hor_diff + $ver_diff ;
+		return $hor_diff + $ver_diff;
 	}
 }
 
@@ -140,7 +120,7 @@ do {
 	foreach ( $mapping as $pair ) {
 		$count++;
 		$sum += $gmap->get_distance( $index, $pair );
-		print( "Sum of $index and $pair:" . PHP_EOL );
+		//print( "Sum of $index and $pair:" . PHP_EOL );
 	}
 } while ( count( $mapping ) );
 

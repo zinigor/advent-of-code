@@ -10,6 +10,8 @@ class MirrorMap {
 
 	public array $mirror = [];
 
+	protected array $permutations = [];
+
 	public function __construct( $input ) {
 		$rows = explode( "\n", $input );
 
@@ -42,6 +44,63 @@ class MirrorMap {
 			$horizontal[0] ?? null,
 			$vertical[0] ?? null,
 		];
+	}
+
+	public function calculate_permutations() {
+		foreach ( $this->rows as $index => $row ) {
+			// printf( "Looking at row %d: %s\n", $index, $row );
+			$offset = 0;
+			while ( false !== ( $position = strpos( $row, '#', $offset ) ) ) {
+				// printf( "Position: %d\n", $position );
+				$offset = $position + 1;
+				$this->permutations[ $index ] ??= [];
+				$this->permutations[ $index ][] = $position;
+			}
+		}
+		// print_r( $this->permutations );
+	}
+
+	public function get_permutated_map( $abs, $ord ) {
+		$rows = $this->rows;
+		$rows[ $ord ] = substr_replace( $rows[ $ord ], '.', $abs, 1 );
+
+		return implode( "\n", $rows );
+	}
+
+	public function get_permutated_reflectios() {
+		$this->calculate_permutations();
+
+		$reflections = [];
+		foreach ( $this->permutations as $ord => $item ) {
+			foreach ( $item as $abs ) {
+				$mirrormap = new MirrorMap( $this->get_permutated_map( $abs, $ord ) );
+				$mirror = $mirrormap->get_mirror();
+
+				if ( is_null( $mirror[0] ) && is_null( $mirror[1] ) ) {
+					continue;
+				}
+
+				if (
+					(
+						is_null ( $mirror[0] )
+						&& $mirror[1] === $this->mirror[1]
+					)
+					|| (
+						is_null ( $mirror[1] )
+						&& $mirror[0] === $this->mirror[0]
+					)
+				) {
+					continue;
+				}
+
+				printf( "Found new mirror location\n" );
+				printf( "New abs: %d\n", $mirror[0] );
+				printf( "New ord: %d\n", $mirror[1] );
+				printf( "Old map:\n%s\n", implode( "\n", $this->rows ) );
+				$reflections[] = $mirror;
+			}
+		}
+		return $reflections;
 	}
 
 	public function reduce_reflections( $carry, $item ) {
@@ -102,5 +161,18 @@ foreach ( explode( "\n\n", $input ) as $block ) {
 		$sum += $map[1] * 100;
 	}
 }
+printf("%d\n", $sum);
 
+$sum = 0;
+foreach ( explode( "\n\n", $input ) as $block ) {
+	$mirrormap = new MirrorMap( $block );
+	$map = $mirrormap->get_permutated_reflectios();
+	// print_r( $map ?? "bleh");
+	$map = $map[0];
+	if ( ! is_null( $map[0] ) ) {
+		$sum += $map[0];
+	} else {
+		$sum += $map[1] * 100;
+	}
+}
 printf("%d\n", $sum);

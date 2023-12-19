@@ -18,7 +18,12 @@ protected array $rows = [];
 		}
 	}
 
-	public function tilt( $direction ) {
+	public function get_hash(): string {
+		return md5( implode( '', $this->rows ) );
+	}
+
+	public function tilt( $direction ): array {
+		$moves = 0;
 		do {
 			$moved_amount = 0;
 			foreach ( $this->rows as $ord => $row ) {
@@ -30,8 +35,42 @@ protected array $rows = [];
 					$moved_amount += $this->move_rock( $abs, $ord, $direction );
 				}
 			}
-			printf( "Moved amount: %d\n", $moved_amount );
+			$moves++;
+			// printf( "Moved amount: %d\n", $moved_amount );
 		} while ( $moved_amount > 0 );
+
+		return [ $moves, $moved_amount ];
+	}
+
+	public function spin_cycle() {
+		$total_moves = 0;
+		$total_amount = 0;
+
+		// North.
+		list( $moves, $amount ) = $this->tilt( [ 0, -1 ] );
+		$total_amount += $amount;
+		$total_moves += $moves;
+
+		// West.
+		list( $moves, $amount ) = $this->tilt( [ -1, 0 ] );
+		$total_amount += $amount;
+		$total_moves += $moves;
+
+		// South.
+		list( $moves, $amount ) = $this->tilt( [ 0, 1 ] );
+		$total_amount += $amount;
+		$total_moves += $moves;
+
+		// East.
+		list( $moves, $amount ) = $this->tilt( [ 1, 0 ] );
+		$total_amount += $amount;
+		$total_moves += $moves;
+
+		if ( 0 === $total_moves ) {
+			return 0;
+		} else {
+			return 1;
+		}
 	}
 
 	public function move_rock( $abs, $ord, $direction ): int {
@@ -69,6 +108,22 @@ protected array $rows = [];
 			//);
 			return 1 + $this->move_rock( $abs + $abs_diff, $ord + $ord_diff, $direction );
 		}
+	}
+
+	public function get_pressure(): int {
+		$height = count( $this->rows );
+
+		$pressure = 0;
+		foreach ( $this->rows as $ord => $row ) {
+			foreach ( str_split( $row, 1 ) as $abs => $char ) {
+				if ( 'O' !== $char ) {
+					continue;
+				}
+
+				$pressure += $height - $ord;
+			}
+		}
+		return $pressure;
 	}
 
 	public function get_at_position( $abs, $ord ): string {
@@ -114,7 +169,42 @@ protected array $rows = [];
 class ScopeException extends Exception {}
 
 $map = new TiltMap( $input );
-$map->print_map();
+// $map->print_map();
 
-$map->tilt( [ 0, -1 ] );
+//$map->tilt( [ 0, -1 ] );
+//$map->print_map();
+
+//printf( "Pressure: %d\n", $map->get_pressure() );
+
+$hashmap = [];
+$map_copies = [];
+$loop_amount = 0;
+for( $i = 0; $i < 1000000; $i++ ) {
+
+	$has_moved = $map->spin_cycle();
+	if ( 0 === $i % 10000  ) {
+		printf( "Processed %d cycles.\n", $i );
+	}
+
+	$hash = $map->get_hash();
+	if ( isset ( $hashmap[ $hash ] ) ) {
+		// printf( "Loop candidate %d:", $i - $hashmap[ $hash ] );
+		$loop_amount = $i - $hashmap[ $hash ];
+		$remainder = 999999 - $i;
+		$tail = $remainder % $loop_amount;
+		break;
+	} else {
+		$hashmap[ $hash ] = $i;
+	}
+
+	if ( 0 === $has_moved ) {
+		printf( "No movement on cycle: %d\n", $i );
+	}
+}
+
+for ( $i = 0; $i < $tail; $i++  ) {
+	$map->spin_cycle();
+}
+
 $map->print_map();
+printf( "Pressure: %d\n", $map->get_pressure() );

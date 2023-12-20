@@ -62,6 +62,7 @@ class Box {
 
         // Compacting ids.
         $this->lenses = array_values( $this->lenses );
+        $this->generate_ids();
     }
 
     public function replace_lens( $id, $focal ): void {

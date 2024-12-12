@@ -1,4 +1,6 @@
 <?php
+// phpcs:disable PEAR
+// phpcs:disable Generic.WhiteSpace
 
 require_once 'input.php';
 
@@ -39,25 +41,36 @@ class Mapper {
 						continue;
 					}
 
-					$antinode = [
-						$other[0] + $y,
-						$other[1] + $x,
+					$this->antinodes[ $type ][] = [
+						$tuple[0],
+						$tuple[1],
 					];
 
-					if (
-						$antinode[0] < 0
-						|| $antinode[0] > $this->vertical
-						|| $antinode[1] < 0
-						|| $antinode[1] > $this->horizontal
-					) {
-						printf(
-							"Antinode of type " . $type . " at (%d,%d) is out of bounds " . PHP_EOL,
-							$antinode[1], $antinode[0]
-							);
-						continue;
-					}
+					do {
+						$antinode = [
+							$other[0] + $y,
+							$other[1] + $x,
+						];
 
-					$this->antinodes[ $type ][] = $antinode;
+						if (
+							$antinode[0] < 0
+								|| $antinode[0] >= $this->vertical
+								|| $antinode[1] < 0
+								|| $antinode[1] >= $this->horizontal
+						) {
+							printf(
+								"Antinode of type " . $type . " at (%d,%d) is out of bounds " . PHP_EOL,
+								$antinode[1], $antinode[0]
+							);
+							break;
+						}
+						$this->antinodes[ $type ][] = $antinode;
+
+						$other = [
+							$other[0] + $y,
+							$other[1] + $x,
+						];
+					} while ( true );
 				}
 			}
 		}
@@ -89,9 +102,17 @@ foreach ( $mapper->antinodes as $type => $nodes ) {
 	}
 }
 echo "Total count: " . $count . PHP_EOL;
-
+/*
 for( $i = 0; $i < $mapper->vertical; $i++ ) {
 	for ( $j = 0; $j < $mapper->horizontal; $j++ ) {
+		foreach ( $mapper->towers as $digit => $towers ) {
+			foreach ( $towers as $tower ) {
+				if ( $tower[0] === $i && $tower[1] === $j ) {
+					echo $digit;
+					continue 3;
+				}
+			}
+		}
 		if ( isset( $seen[ $i ][ $j ] ) ) {
 			echo strtolower( $seen[ $i ][ $j ] );
 			continue;
@@ -100,3 +121,5 @@ for( $i = 0; $i < $mapper->vertical; $i++ ) {
 	}
 	echo PHP_EOL;
 }
+echo PHP_EOL;
+*/

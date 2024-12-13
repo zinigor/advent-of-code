@@ -10,6 +10,8 @@ class DiskMap {
 
 	public $files = [];
 
+	public $max_block;
+
 	public function __construct( $input ) {
 		$block_pointer = 0;
 		for ( $i = 0; $i < strlen( $input ); $i += 2 ) {
@@ -28,8 +30,81 @@ class DiskMap {
 				$block_pointer++;
 			}
 		}
+		$this->max_block = sizeof( $this->blocks ) - 1;
+	}
+
+	public function get_first_empty_block() {
+		foreach( $this->blocks as $index => $value ) {
+			if ( false === $value ) {
+				return $index;
+			}
+		}
+
+		throw new Exception( "No space left!" );
+	}
+
+	public function get_last_non_empty_block() {
+		for ( $index = $this->max_block; $index >= 0; $index-- ) {
+			if ( false !== $this->blocks[ $index ] ) {
+				return $index;
+			}
+		}
+	}
+
+	public function swap( $one, $other ) {
+		$first = $this->blocks[ $one ];
+		$second = $this->blocks[ $other ];
+
+		if ( false !== $first ) {
+			$this->files[ $first ] = [
+				$other,
+				...array_diff(
+					$this->files[ $first ],
+					[ $one ]
+				)
+			];
+		}
+
+		if ( false !== $second ) {
+			$this->files[ $second ] = [
+				$one,
+				...array_diff(
+					$this->files[ $second ],
+					[ $other ]
+				)
+			];
+		}
+
+		$this->blocks[ $one ] = $second;
+		$this->blocks[ $other ] = $first;
+	}
+
+	public function defragment() {
+		$empty = $this->get_first_empty_block();
+		$full = $this->get_last_non_empty_block();
+
+		if ( $empty > $full ) {
+			return true;
+		}
+
+		$this->swap( $empty, $full );
+
+		return $this->defragment();
+	}
+
+	public function get_checksum() {
+		$sum = 0;
+		foreach( $this->blocks as $index => $value ) {
+			$sum += $index * $value;
+		}
+		return $sum;
 	}
 }
 
 $diskmap = new DiskMap( $input );
-var_dump( $diskmap );
+// var_dump( $diskmap );
+//echo $diskmap->get_last_non_empty_block();
+//echo $diskmap->get_first_empty_block();
+$diskmap->defragment();
+// print_r( $diskmap->blocks );
+echo $diskmap->get_checksum() . PHP_EOL;

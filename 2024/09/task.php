@@ -43,6 +43,22 @@ class DiskMap {
 		throw new Exception( "No space left!" );
 	}
 
+	public function get_first_contigous_empty_block( $length ) {
+		$found = 0;
+		foreach( $this->blocks as $index => $value ) {
+			if ( false === $value ) {
+				$found++;
+				if ( $found === $length ) {
+					return $index - $length + 1;
+				}
+			} else {
+				$found = 0;
+			}
+		}
+
+		throw new Exception( "No space left!" );
+	}
+
 	public function get_last_non_empty_block() {
 		for ( $index = $this->max_block; $index >= 0; $index-- ) {
 			if ( false !== $this->blocks[ $index ] ) {
@@ -92,6 +108,31 @@ class DiskMap {
 		return $this->defragment();
 	}
 
+	public function compact() {
+		krsort( $this->files );
+
+		foreach ( $this->files as $id => $blocks ) {
+			try {
+				$position = $this->get_first_contigous_empty_block(
+					sizeof( $blocks )
+				);
+			} catch ( Exception $e ) {
+				continue;
+			}
+
+			if (
+				$position > $this->get_last_non_empty_block()
+				|| $position > $blocks[0]
+			) {
+				continue;
+			}
+
+			for ( $i = 0; $i < sizeof( $blocks ); $i++ ) {
+				$this->swap( $blocks[ $i ], $position + $i );
+			}
+		}
+	}
+
 	public function get_checksum() {
 		$sum = 0;
 		foreach( $this->blocks as $index => $value ) {
@@ -105,6 +146,10 @@ $diskmap = new DiskMap( $input );
 // var_dump( $diskmap );
 //echo $diskmap->get_last_non_empty_block();
 //echo $diskmap->get_first_empty_block();
-$diskmap->defragment();
+//$diskmap->defragment();
 // print_r( $diskmap->blocks );
+//echo $diskmap->get_checksum() . PHP_EOL;
+//echo $diskmap->get_first_contigous_empty_block( 3 );
+$diskmap->compact();
+//var_dump( $diskmap->blocks );
 echo $diskmap->get_checksum() . PHP_EOL;

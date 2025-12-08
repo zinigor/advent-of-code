@@ -4,81 +4,32 @@ require __DIR__ . '/input.php';
 
 // $input = $test_input;
 
-function is_silly( string $number ): bool {
-    if ( strlen( $number ) % 2 ) {
-        // echo $number . " is not silly" . PHP_EOL;
-        $is_mono = is_mono_silly( $number );
-        if ( $is_mono ) {
+function is_silly(string $number): bool {
+    $len = strlen($number);
+
+    // Try all possible pattern lengths from 1 to len/2
+    for ( $pattern_len = 1; $pattern_len <= $len / 2; $pattern_len++ ) {
+        // Pattern must divide evenly into the total length
+        if ($len % $pattern_len !== 0) {
+            continue;
+        }
+
+        // Must repeat at least twice
+        $repetitions = $len / $pattern_len;
+        if ( $repetitions < 2 ) {
+            continue;
+        }
+
+        $pattern = substr( $number, 0, $pattern_len );
+
+        // Check if the entire string is this pattern repeated
+        if ( str_repeat( $pattern, $repetitions ) === $number ) {
+            echo "$number is silly (pattern '$pattern' x $repetitions)" . PHP_EOL;
             return true;
         }
     }
 
-    $first = substr( $number, 0, strlen( $number ) / 2 );
-    $last  = substr( $number, strlen( $number ) / 2 );
-
-    if ( strlen( $number ) % 2 == 0 && (int) $first === (int) $last ) {
-        echo $number . " is silly" . PHP_EOL;
-        return true;
-    } else {
-        // echo $number . " is not silly" . PHP_EOL;
-        return is_dual_silly( $number )
-            || is_triple_silly( $number );
-    }
-}
-
-function is_mono_silly( string $number ): bool {
-    $pattern = null;
-    for ( $i = 0; $i < strlen( $number ); $i++ ) {
-        $next = $number[$i];
-        if ( $pattern !== null && $pattern != $next ) {
-            return false;
-        }
-        $pattern = $next;
-    }
-    echo $number . " is mono silly" . PHP_EOL;
-    return true;
-}
-
-function is_dual_silly( string $number ): bool {
-    $pattern = null;
-    $strlen  = strlen( $number );
-    if ( $strlen === 2 ) {
-        return false;
-    }
-
-    for ( $i = 0; $i < $strlen; $i += 2 ) {
-        if ( $i + 1 === $strlen ) {
-            return false;
-        }
-        $next = $number[$i] . $number[$i+1];
-        if ( $pattern !== null && $pattern != $next ) {
-            return false;
-        }
-        $pattern = $next;
-    }
-    echo $number . " is dual silly" . PHP_EOL;
-    return true;
-}
-
-function is_triple_silly( string $number ): bool {
-    $pattern = null;
-    $strlen  = strlen( $number );
-    if ( $strlen === 3 ) {
-        return false;
-    }
-
-    for ( $i = 0; $i < strlen( $number ); $i += 3 ) {
-        if ( $i + 2 >= $strlen ) {
-            return false;
-        }
-        $next = $number[$i] . $number[$i+1] . $number[$i+2];
-        if ( $pattern !== null && $pattern != $next ) {
-            return false;
-        }
-        $pattern = $next;
-    }
-    echo $number . " is triple silly" . PHP_EOL;
-    return true;
+    return false;
 }
 
 $result = 0;
